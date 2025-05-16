@@ -2,89 +2,108 @@
 class Carerra {
 
 }
-class Materia {
 
-    method carrera()
+object programacion inherits Carerra {}
+class Materia {
+    const carrera = null
 }
 
-// class MateriaDeProgramacion inherits Materia {
-//     override method carrera() {
-//         return programacion
-//     }
-// }
-// 
-// class MateriaDeMedicina inherits Materia {
-//     override method carrera() {
-//         return medicina
-//     }
-// }
-// 
-// class MateriaDeDerecho inherits Materia {
-//     override method carrera() {
-//         return derecho
-//     }
-// }
 
 class Estudiante {
-
-    const materiasAprobadas = #{}
-
-    method materiaAprobadaCon(materia, nota) {
-        siu.materiaAprobadaCon(self, materia, nota)
-        materiasAprobadas.add(materia)
-    }
-
-    method materiasAprobadas() {
-        return materiasAprobadas
-    }
-
-    method cantidadDeMateriasAprobadas() {
-        return materiasAprobadas.size()
+    const property idSIU = null
+    
+    method cantAprobadas() {
+        return siu.cantAprobadas(self)
     }
 
     method promedio() {
-        return self.sumaNotasAprobadas() / self.cantidadDeMateriasAprobadas()
+        return siu.promedio(idSIU)
     }
 
-    method sumaNotasAprobadas() {
-        return siu.sumaNotasAprobadas(self)
-    }
-
-    method tieneAprobada(materia) {
-        return materiasAprobadas.contains(materia)
-    }
-
-    method materiasInscripto() {
-
+    method estaAprobada(materia) {
+        return siu.estaAprobada(idSIU, materia)
     }
 }
 
 object siu {
-    const estudiantesConAprobadas = new Dictionary()
-    const materiasConNota = new Dictionary()
 
-    method materiaAprobadaCon(estudiante, materia, nota) {
-        if (! estaAprobadaPor(materia, estudiante)) {
-             estudiantesConAprobadas.put(estudiante, materiasConNota.put(materia, nota))
-        } else { 
-            self.error("El estudiante ya aprobó esta materia.")
-        } 
+    const notaDeAprobacion = 4
+    var registroEnProseso = null
+
+    method registrarAcreditada(estudiante, materia, nota) {
+        const registroTemp = new RegistroAcreditacion()
+        registroTemp.registrar(materia, nota) 
+        estudiante.idSIU(registroTemp.identity())
+        registroEnProseso = registroTemp
     }
 
-    method estaAprobadaPor(materia, estudiante) {
-        return self.materiasDe(estudiante).containsKey(materia)
+    method aprobadaPor(materia, estudiante) {
+        const registroTemp = estudiante.idSIU()
+        return registroTemp.nota(materia) >= notaDeAprobacion
     }
 
-    method materiasDe(estudiante) {
-        return estudiantesConAprobadas.get(estudiante)
+    method cantAprobadas(estudiante) {
+        return estudiante.idSIU().cantAprobadas()
     }
 
-    method sumaNotasAprobadas(estudiante) {
-        const materias = estudiantesConAprobadas.get(estudiante)
-        return self.sumaNotas(materias)
+    method promedio(idSIU) {
+        return idSIU.promedio()
     }
 
-    method sumaNotas(materias) {
-        return materias.values().sum()
-    }  
+    method estaAprobada(idSIU, materia) {
+        return idSIU.nota(materia) >= notaDeAprobacion
+    }
+    
 }
+
+class RegistroAcreditacion {
+
+    const materias = #{} 
+    
+    method registrar(materia, nota) {
+        const materiaYNota = new ParMateriaNota (materia = materia, nota = nota)
+        materias.add(materiaYNota)
+    }
+
+    method nota(materia) {
+        return self.materia(materia).nota()
+    }
+
+    method materia(materia){ 
+        return materias.find({
+            par => par.materia() == (materia)
+        })
+    }
+
+    method cantAprobadas() {
+        return self.materiasAprobadas().size()
+    }
+
+    method materiasAprobadas() {
+        return materias
+    }
+
+    method promedio() {
+        return self.sumaNotas() / self.cantAprobadas()
+    }
+    
+    method sumaNotas() {
+        return materias.sum({
+            par => par.nota()
+        })
+    }
+}
+
+class ParMateriaNota {
+    const materia = null
+    const nota = null
+    
+    method crear() {
+        new Pair (x = materia, y = nota)
+    } 
+
+    method nota(){
+        return nota
+    }
+}
+
