@@ -1,0 +1,7 @@
+import materias.*
+
+
+const programacion = new Carrera ()
+const mate = new Materia (carrera = programacion, nombre = "matematica")
+const elem = new Materia (carrera = programacion, nombre = "elementos")
+const roque = new Estudiante()

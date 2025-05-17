@@ -1,109 +1,212 @@
 
-class Carerra {
+class Carrera {
+    const inscriptos = #{}
+    const materias = #{}
 
-}
-
-object programacion inherits Carerra {}
-class Materia {
-    const carrera = null
-}
-
-
-class Estudiante {
-    const property idSIU = null
-    
-    method cantAprobadas() {
-        return siu.cantAprobadas(self)
+    method inscribirA(estudiante) {
+        self.validarIncripcion(estudiante)
+        inscriptos.add(estudiante)
     }
 
-    method promedio() {
-        return siu.promedio(idSIU)
+    method validarIncripcion(estudiante) {
+        if (! self.estaEnLaCarrera(estudiante)) {}
     }
 
-    method estaAprobada(materia) {
-        return siu.estaAprobada(idSIU, materia)
-    }
-}
-
-object siu {
-
-    const notaDeAprobacion = 4
-    var registroEnProseso = null
-
-    method registrarAcreditada(estudiante, materia, nota) {
-        const registroTemp = new RegistroAcreditacion()
-        registroTemp.registrar(materia, nota) 
-        estudiante.idSIU(registroTemp.identity())
-        registroEnProseso = registroTemp
+    method estaEnLaCarrera(estudiante) {
+        return inscriptos.contains(estudiante)
     }
 
-    method aprobadaPor(materia, estudiante) {
-        const registroTemp = estudiante.idSIU()
-        return registroTemp.nota(materia) >= notaDeAprobacion
-    }
-
-    method cantAprobadas(estudiante) {
-        return estudiante.idSIU().cantAprobadas()
-    }
-
-    method promedio(idSIU) {
-        return idSIU.promedio()
-    }
-
-    method estaAprobada(idSIU, materia) {
-        return idSIU.nota(materia) >= notaDeAprobacion
-    }
-    
-}
-
-class RegistroAcreditacion {
-
-    const materias = #{} 
-    
-    method registrar(materia, nota) {
-        const materiaYNota = new ParMateriaNota (materia = materia, nota = nota)
-        materias.add(materiaYNota)
-    }
-
-    method nota(materia) {
-        return self.materia(materia).nota()
-    }
-
-    method materia(materia){ 
-        return materias.find({
-            par => par.materia() == (materia)
+    method materiasApto(estudiante) {
+        self.validarIncripcion(estudiante)
+        materias.filter({
+            materia => materia.validoInscribirse(estudiante)
         })
     }
 
-    method cantAprobadas() {
-        return self.materiasAprobadas().size()
+    method materiasInscripto(estudiante) {
+        return materias.filter({
+            materia => materia.estaInscripto(estudiante)
+        })
+    }
+}
+class Materia {
+    const carrera = null
+    const nombre = null
+    const property alumnos = #{}
+    const correlativas = []
+    var cupo = 0
+    const property listaDeEspera = []
+
+    method carrera() {
+        return carrera
     }
 
-    method materiasAprobadas() {
-        return materias
+    method nombre(){
+        return nombre
+    }
+
+    method cupo(_cupo) {
+        cupo = _cupo
+    }
+    
+    method inscribirA(estudiante) {
+        self.validarInscribirA(estudiante)
+        self.inscribirOEsperar(estudiante)
+    }
+
+    method inscribirOEsperar(estudiante) { 
+        if (! self.tieneCupoLleno()){
+            alumnos.add(estudiante)
+            estudiante.quedarInscripto(self)
+        } else {
+            listaDeEspera.add(estudiante)
+            estudiante.quedarEnEspera(self)
+        }
+    } 
+
+    method tieneCupoLleno() {
+        return self.cantDeInscriptos() <= cupo
+    }
+
+    method cantDeInscriptos() {
+        return alumnos.size()
+    }
+
+    method validarInscribirA(estudiante) {
+        if (! self.validoInscribirse(estudiante)) {
+            self.error("No cumple condicines de inscripción.")
+         }
+    }
+
+    method validoInscribirse(estudiante) {
+        return carrera.estaInscripto(estudiante)         
+               and self.cumpleCorrelativas(estudiante)          
+               and ! self.aprobo(estudiante)            
+               and ! self.estaInscripto(estudiante)          
+    }
+    
+    method aprobo(estudiante) {
+        return estudiante.foja().estaAprobada(self)
+    }
+
+    method estaInscripto(estudiante) {
+        return alumnos.contains(estudiante) || listaDeEspera.contains(estudiante)
+    }
+
+    method cumpleCorrelativas(estudiante) {
+        return correlativas.all({
+            correlativa => estudiante.foja().estaAprobada(correlativa)
+        })
+    }
+
+    method darDeBaja(estudiante) {
+        self.validarEstudianteSeaAlumno(estudiante)
+        alumnos.remove(estudiante)
+        if (self.hayEnEspera()) {
+            self.inscribirA(listaDeEspera.first())
+            listaDeEspera.drop(1)
+        }
+    }
+
+    method hayEnEspera() {
+        return ! listaDeEspera.isEmpty()
+    }
+
+    method validarEstudianteSeaAlumno(estudiante) {
+        if (! self.estaInscripto(estudiante)) {}
+    }
+}
+class Estudiante {
+    
+   const property foja = new Foja()
+   const property materiasInscripto = #{}
+   const property materiasEnListaDeEspera = #{}
+   const property carreras = #{}
+
+   method cantidadDeAprobadas() {
+        return foja.cantAprobadas()
+   }
+
+    method promedio() {
+        return foja.promedio()
+    }
+
+    method estaAprobada(materia) {
+        return foja.estaAprobada(materia)
+    }
+
+    method materiasInscripto() {
+        return carreras.find({
+            carrera => carrera.materiasInscripto(self)
+        }).flatten()
+    }
+
+    method inscribirEn(carrera) {
+        carrera.inscribirA(self)
+        carreras.add(carrera)
+    }
+
+    method inscribirA(materia) {
+        materia.inscribirA(self)
+    }
+
+    method quedarEnEspera(materia) {
+        materiasInscripto.add(materia)
+    }
+
+    method quedarInscripto(materia) {
+        materiasEnListaDeEspera.add(materia)
+    }
+
+    method materiasQueSePuedeInscribir(carrera) {
+        return carrera.materiasApto(self)
+    }
+}
+class Foja {
+    const actas = #{} 
+    //const materiasAprobadas = #{} 
+    //const notas = #{}
+    
+    method registrar(materia, nota) {
+        self.validarRegistrar(materia)
+        const acta = new Acta (materia = materia , nota = nota)
+        actas.add(acta)
+        //materiasAprobadas.add(materia)
+        //notas.add(nota)
+    }
+
+    method validarRegistrar(materia) {
+        if (self.estaAprobada(materia)) {
+            self.error("Esta materia ya se encuentra registrada como aprobada.")
+        }
+    }
+
+    method cantAprobadas() { 
+        return actas.size()
+    }
+
+    method estaAprobada(materia) {
+        return actas.any({
+            acta => acta.esMateria(materia)
+        })
     }
 
     method promedio() {
         return self.sumaNotas() / self.cantAprobadas()
     }
-    
+
     method sumaNotas() {
-        return materias.sum({
-            par => par.nota()
+        return actas.sum({
+            acta => acta.nota()
         })
     }
 }
+class Acta {
+    var property materia = null
+    var property nota = null
 
-class ParMateriaNota {
-    const materia = null
-    const nota = null
-    
-    method crear() {
-        new Pair (x = materia, y = nota)
-    } 
-
-    method nota(){
-        return nota
+    method esMateria(materiaBuscada) {
+        return materia.nombre() == materiaBuscada.nombre()
     }
-}
 
+}
