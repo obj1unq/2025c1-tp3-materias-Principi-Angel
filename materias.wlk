@@ -3,13 +3,8 @@ class Carrera {
     const inscriptos = #{}
     const materias = #{}
 
-    method inscribirA(estudiante) {
-        self.validarIncripcion(estudiante)
+    method inscribirC(estudiante) {
         inscriptos.add(estudiante)
-    }
-
-    method validarIncripcion(estudiante) {
-        if (! self.estaEnLaCarrera(estudiante)) {}
     }
 
     method estaEnLaCarrera(estudiante) {
@@ -17,10 +12,14 @@ class Carrera {
     }
 
     method materiasApto(estudiante) {
-        self.validarIncripcion(estudiante)
-        materias.filter({
-            materia => materia.validoInscribirse(estudiante)
+        return materias.filter({
+            materia => materia.puedeInscribirse(estudiante)
         })
+    }
+
+    method registrarAprobada(estudiante, materia, nota) {
+        estudiante.foja().registrar(materia, nota)
+        materia.darDeBaja(estudiante)
     }
 
     method materiasInscripto(estudiante) {
@@ -34,9 +33,9 @@ class Materia {
     const nombre = null
     const property alumnos = #{}
     const tieneCorrelativas = false
-    const correlativas = []
-    var cupo = 0
-    const property listaDeEspera = []
+    const correlativas = #{}
+    var cupo = null
+    var listaDeEspera = []
 
     method carrera() {
         return carrera
@@ -49,6 +48,10 @@ class Materia {
     method cupo(_cupo) {
         cupo = _cupo
     }
+
+    method lisaDeEspera() {
+        return listaDeEspera
+    }
     
     method inscribirA(estudiante) {
         self.validarInscribirA(estudiante)
@@ -56,20 +59,18 @@ class Materia {
     }
 
     method inscribirOEsperar(estudiante) { 
-        if (! self.tieneCupoLleno()){
+        if (self.tieneCupo()){
             alumnos.add(estudiante)
-            estudiante.quedarInscripto(self)
         } else {
             listaDeEspera.add(estudiante)
-            estudiante.quedarEnEspera(self)
         }
     } 
 
-    method tieneCupoLleno() {
-        return self.cantDeInscriptos() <= cupo
+    method tieneCupo() {
+        return self.cantDeRegulares() < cupo
     }
 
-    method cantDeInscriptos() {
+    method cantDeRegulares() {
         return alumnos.size()
     }
 
@@ -85,14 +86,22 @@ class Materia {
     }
 
     method estaInscripto(estudiante) {
-        return alumnos.contains(estudiante) or listaDeEspera.contains(estudiante)
+        return self.esRegular(estudiante) or self.estaEnEspera(estudiante)
+    }
+
+    method esRegular(estudiante) {
+        return alumnos.contains(estudiante)
+    }
+
+    method estaEnEspera(estudiante) {
+        return listaDeEspera.contains(estudiante)
     }
 
     method cumpleCorrelativas(estudiante) {
-        return if (tieneCorrelativas) {
-                self.estanAprobadasCorrelativas(estudiante) 
+        return if (not tieneCorrelativas) {
+                true 
             } else {
-                true
+                self.estanAprobadasCorrelativas(estudiante) 
             }
     }
     
@@ -103,23 +112,42 @@ class Materia {
     }
 
     method darDeBaja(estudiante) {
-        self.validarEstudianteSeaAlumno(estudiante)
-        alumnos.remove(estudiante)
-        if (self.hayEnEspera()) {
-            self.inscribirA(listaDeEspera.first())
-            listaDeEspera.drop(1)
-        }
+        self.validarEsteInscripto(estudiante)
+        self.darBaja(estudiante)
     }
 
     method hayEnEspera() {
-        return ! listaDeEspera.isEmpty()
+        return not listaDeEspera.isEmpty()
     }
 
-    method validarEstudianteSeaAlumno(estudiante) {
-        if (! self.estaInscripto(estudiante)) {}
+    method validarEsteInscripto(estudiante) {
+        if (not self.estaInscripto(estudiante)) {}
+    }
+
+    method darBaja(estudiante) {
+        if(self.esRegular(estudiante)) {
+            alumnos.remove(estudiante)
+            self.pasarEsperaARegular()
+        } else {
+            listaDeEspera.remove(estudiante)
+        }
+    }
+
+    method pasarEsperaARegular() {  
+        if (self.hayEnEspera()) {
+            self.pasarARegular(listaDeEspera.first())
+        }
+    } 
+
+    method pasarARegular(primListaEspera) {
+        alumnos.add(primListaEspera)
+        listaDeEspera = listaDeEspera.drop(1)
+    }
+
+    method puedeInscribirse(estudiante) {
+        return self.cumpleCorrelativas(estudiante) and not self.aprobo(estudiante) and not self.estaInscripto(estudiante)
     }
 }
-
 class Validador {
     const mensaje = null
 
@@ -129,19 +157,13 @@ class Validador {
         }
     }
 }
-
 object validacionEstudianteEnCarrera inherits Validador(mensaje = "No está inscripto en la carrera."){ }
 object validacionCumpleCorrelativas inherits Validador(mensaje = "No cumple correlativas."){ }
 object validacionAprobada inherits Validador(mensaje = "Ya aprobó esta materia."){ }
 object validacionInscripto inherits Validador(mensaje = "Ya está inscripto en esta materia."){ }
-
-
-
 class Estudiante {
     
    const property foja = new Foja()
-   const property materiasInscripto = #{}
-   const property materiasEnListaDeEspera = #{}
    const property carreras = #{}
 
    method cantidadDeAprobadas() {
@@ -156,44 +178,54 @@ class Estudiante {
         return foja.estaAprobada(materia)
     }
 
-    method materiasInscriptoTodas() {
-        return carreras.find({
-            carrera => carrera.materiasInscripto(self)
-        }).flatten()
+    method materiasInscripto() {
+        const materias = #{}
+        carreras.forEach({
+            carrera => materias.add(carrera.materiasInscripto(self))
+        })
+        return materias.flatten().asSet()
     }
 
-    method inscribirEn(carrera) {
-        carrera.inscribirA(self)
+    method inscribirEnCarrera(carrera) {
+        carrera.inscribirC(self)
         carreras.add(carrera)
     }
 
-    method inscribirA(materia) {
+    method inscribirEn(materia) {
         materia.inscribirA(self)
     }
 
-    method quedarEnEspera(materia) {
-        materiasInscripto.add(materia)
+    method materiasAlumnoRegular(){
+        return self.materiasInscripto().filter({
+            materia => materia.esRegular(self)
+        })
     }
 
-    method quedarInscripto(materia) {
-        materiasEnListaDeEspera.add(materia)
+    method materiasEnListaDeEspera(){
+        return self.materiasInscripto().filter({
+            materia => materia.estaEnEspera(self)
+        })
+    }
+
+    method darseDeBaja(materia) {
+        materia.darDeBaja(self)
     }
 
     method materiasQueSePuedeInscribir(carrera) {
         return carrera.materiasApto(self)
     }
+
+    method nota(materia) {
+        return foja.nota(materia)
+    }
 }
 class Foja {
     const actas = #{} 
-    //const materiasAprobadas = #{} 
-    //const notas = #{}
     
     method registrar(materia, nota) {
         self.validarRegistrar(materia)
         const acta = new Acta (materia = materia , nota = nota)
         actas.add(acta)
-        //materiasAprobadas.add(materia)
-        //notas.add(nota)
     }
 
     method validarRegistrar(materia) {
@@ -221,13 +253,18 @@ class Foja {
             acta => acta.nota()
         })
     }
+
+    method nota(materia) {
+        return actas.find({
+            acta => acta.esMateria(materia)
+        }).nota()
+    }
 }
 class Acta {
     var property materia = null
     var property nota = null
 
     method esMateria(materiaBuscada) {
-        return materia.nombre() == materiaBuscada.nombre()
+        return materia == materiaBuscada
     }
-
 }
