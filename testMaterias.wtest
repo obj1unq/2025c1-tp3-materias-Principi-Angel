@@ -1,7 +1,15 @@
 import materias.*
+import modeloUniversidad.*
+describe "tests TP3: Materias" { 
 
-
-const programacion = new Carrera ()
-const mate = new Materia (carrera = programacion, nombre = "matematica")
-const elem = new Materia (carrera = programacion, nombre = "elementos")
-const roque = new Estudiante()
+    const roque = new Estudiante()
+    test "roque siendo ingresante intenta anotarse en Mate1, falla, se insribe en programación, se anota en Mate1 y la aprueba" { 
+        assert.throwsException({roque.inscribirA(matematicaI)})
+        assert.equals(#{}, roque.materiasInscripto())
+        roque.inscribirEn(programacion)
+        roque.inscribirA(matematicaI)
+        assert.that(matematicaI.estaInscripto(roque))
+        roque.foja().registrar(matematicaI, 8)
+        assert.that(roque.estaAprobada(matematicaI))
+    } 
+}

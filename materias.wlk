@@ -30,9 +30,10 @@ class Carrera {
     }
 }
 class Materia {
-    const carrera = null
+    const carrera
     const nombre = null
     const property alumnos = #{}
+    const tieneCorrelativas = false
     const correlativas = []
     var cupo = 0
     const property listaDeEspera = []
@@ -73,27 +74,29 @@ class Materia {
     }
 
     method validarInscribirA(estudiante) {
-        if (! self.validoInscribirse(estudiante)) {
-            self.error("No cumple condicines de inscripción.")
-         }
-    }
+        validacionEstudianteEnCarrera.validar(carrera.estaEnLaCarrera(estudiante)) 
+        validacionCumpleCorrelativas.validar(self.cumpleCorrelativas(estudiante))
+        validacionAprobada.validar(not self.aprobo(estudiante)) 
+        validacionInscripto.validar(not self.estaInscripto(estudiante))
+    }        
 
-    method validoInscribirse(estudiante) {
-        return carrera.estaInscripto(estudiante)         
-               and self.cumpleCorrelativas(estudiante)          
-               and ! self.aprobo(estudiante)            
-               and ! self.estaInscripto(estudiante)          
-    }
-    
     method aprobo(estudiante) {
         return estudiante.foja().estaAprobada(self)
     }
 
     method estaInscripto(estudiante) {
-        return alumnos.contains(estudiante) || listaDeEspera.contains(estudiante)
+        return alumnos.contains(estudiante) or listaDeEspera.contains(estudiante)
     }
 
     method cumpleCorrelativas(estudiante) {
+        return if (tieneCorrelativas) {
+                self.estanAprobadasCorrelativas(estudiante) 
+            } else {
+                true
+            }
+    }
+    
+    method estanAprobadasCorrelativas(estudiante) {
         return correlativas.all({
             correlativa => estudiante.foja().estaAprobada(correlativa)
         })
@@ -116,6 +119,24 @@ class Materia {
         if (! self.estaInscripto(estudiante)) {}
     }
 }
+
+class Validador {
+    const mensaje = null
+
+    method validar(condicion) {
+        if (not condicion) {
+            self.error(mensaje)
+        }
+    }
+}
+
+object validacionEstudianteEnCarrera inherits Validador(mensaje = "No está inscripto en la carrera."){ }
+object validacionCumpleCorrelativas inherits Validador(mensaje = "No cumple correlativas."){ }
+object validacionAprobada inherits Validador(mensaje = "Ya aprobó esta materia."){ }
+object validacionInscripto inherits Validador(mensaje = "Ya está inscripto en esta materia."){ }
+
+
+
 class Estudiante {
     
    const property foja = new Foja()
@@ -135,7 +156,7 @@ class Estudiante {
         return foja.estaAprobada(materia)
     }
 
-    method materiasInscripto() {
+    method materiasInscriptoTodas() {
         return carreras.find({
             carrera => carrera.materiasInscripto(self)
         }).flatten()
