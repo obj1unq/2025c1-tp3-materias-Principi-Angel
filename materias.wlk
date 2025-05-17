@@ -1,4 +1,4 @@
-
+// ObjI - TP3: Materias
 class Carrera {
     const inscriptos = #{}
     const materias = #{}
@@ -30,26 +30,13 @@ class Carrera {
 }
 class Materia {
     const carrera
-    const nombre = null
     const property alumnos = #{}
     const tieneCorrelativas = false
     const correlativas = #{}
-    var cupo = null
+    const cupo = null
     var listaDeEspera = []
 
-    method carrera() {
-        return carrera
-    }
-
-    method nombre(){
-        return nombre
-    }
-
-    method cupo(_cupo) {
-        cupo = _cupo
-    }
-
-    method lisaDeEspera() {
+    method listaDeEspera() {
         return listaDeEspera
     }
     

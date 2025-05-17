@@ -1,8 +1,7 @@
 import materias.*
 import modeloUniversidad.*
 describe "tests TP3: Materias" { 
-    
-    const roque = new Estudiante()
+    const roque  = new Estudiante()
     const luisa  = new Estudiante()
     const romina = new Estudiante()
     const alicia = new Estudiante()
@@ -45,7 +44,7 @@ describe "tests TP3: Materias" {
         assert.equals(#{objetosII, progConcurrente}, roque.materiasQueSePuedeInscribir(programacion))
         assert.equals(#{biologiaII}, roque.materiasQueSePuedeInscribir(medicina))
     }
-
+    
     test "Si se inscriben, en este orden, Luisa, Romina, Alicia y Roque en Objetos 2, entonces las tres primeras quedan confirmadas, y Roque queda en lista de espera. Si después se da de baja Romina en Objetos 2, entonces Roque pasa a tener la inscripción confirmada en esa materia." {
         luisa.inscribirEn(objetosII)
         romina.inscribirEn(objetosII)
@@ -90,7 +89,7 @@ describe "tests TP3: Materias" {
         programacion.registrarAprobada(ana, objetosI, 10)
         programacion.registrarAprobada(ana, objetosII, 10)
         programacion.registrarAprobada(ana, objetosIII, 10)
-        programacion.registrarAprobada(ana, estructuras, 9)
+        programacion.registrarAprobada(ana, tpFinal, 9)
         assert.equals(9.85714, ana.promedio())
     }
 }
