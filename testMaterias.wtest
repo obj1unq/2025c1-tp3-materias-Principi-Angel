@@ -1,0 +1,123 @@
+import materias.*
+import modeloUniversidad.*
+describe "tests TP3: Materias" { 
+    const roque  = new Estudiante()
+    const luisa  = new Estudiante()
+    const romina = new Estudiante()
+    const alicia = new Estudiante()
+    const ana    = new Estudiante()
+
+    method initialize() { 
+        roque.inscribirEnCarrera(programacion)
+        roque.inscribirEnCarrera(medicina)
+        roque.inscribirEn(elementos)
+        roque.inscribirEn(matematicaI)
+        roque.inscribirEn(objetosI)
+        roque.inscribirEn(basesDeDatos)
+        programacion.registrarAprobada(roque, elementos, 5)
+        programacion.registrarAprobada(roque, matematicaI, 8)
+        programacion.registrarAprobada(roque, objetosI, 7)
+        programacion.registrarAprobada(roque, basesDeDatos, 10)
+        roque.inscribirEn(quimica)
+        roque.inscribirEn(biologiaI)
+        medicina.registrarAprobada(roque, quimica, 7)
+        medicina.registrarAprobada(roque, biologiaI, 9)
+        luisa.inscribirEnCarrera(programacion)
+        romina.inscribirEnCarrera(programacion)
+        alicia.inscribirEnCarrera(programacion)
+        ana.inscribirEnCarrera(programacion)
+        luisa.inscribirEn(elementos)
+        romina.inscribirEn(elementos)
+        alicia.inscribirEn(elementos)
+        ana.inscribirEn(elementos)
+        programacion.registrarAprobada(luisa, elementos, 4)
+        programacion.registrarAprobada(romina, elementos, 9)
+        programacion.registrarAprobada(alicia, elementos, 8)
+        programacion.registrarAprobada(ana, elementos, 10)
+        luisa.inscribirEn(objetosI)
+        romina.inscribirEn(objetosI)
+        alicia.inscribirEn(objetosI)
+        programacion.registrarAprobada(luisa, objetosI, 4)
+        programacion.registrarAprobada(romina, objetosI, 8)
+        programacion.registrarAprobada(alicia, objetosI, 9)
+        luisa.inscribirEn(matematicaI)
+        romina.inscribirEn(matematicaI)
+        alicia.inscribirEn(matematicaI)
+        programacion.registrarAprobada(luisa, matematicaI, 4)
+        programacion.registrarAprobada(romina, matematicaI, 10)
+        programacion.registrarAprobada(alicia, matematicaI, 7)
+    }
+
+    test "Roque puede inscribirse en Objetos 2, pero no en Objetos 3 (porque le falta Objetos 2) ni en Objetos 1 (porque ya la tiene aprobada)."{
+        roque.inscribirEn(objetosII)
+        assert.equals(#{objetosII}, roque.materiasAlumnoRegular())
+        assert.throwsException({roque.inscribirEn(objetosIII)})
+        assert.throwsException({roque.inscribirEn(objetosI)})
+        assert.equals(#{objetosII}, roque.materiasInscripto())
+    }
+
+    test "Roque puede inscribirse: en Programación, en Objetos 2 y Programación Concurrente; en Medicina, en Biología 2."{
+        assert.equals(#{objetosII, progConcurrente}, roque.materiasQueSePuedeInscribir(programacion))
+        assert.equals(#{biologiaII}, roque.materiasQueSePuedeInscribir(medicina))
+    }
+    
+    test "Si se inscriben, en este orden, Luisa, Romina, Alicia y Roque en Objetos 2, entonces las tres primeras quedan confirmadas, y Roque queda en lista de espera. Si después se da de baja Romina en Objetos 2, entonces Roque pasa a tener la inscripción confirmada en esa materia." {
+        luisa.inscribirEn(objetosII)
+        romina.inscribirEn(objetosII)
+        alicia.inscribirEn(objetosII)
+        roque.inscribirEn(objetosII)
+        assert.equals(#{luisa, romina, alicia}, objetosII.alumnos())
+        assert.equals([roque], objetosII.listaDeEspera())
+        romina.darseDeBaja(objetosII)
+        assert.equals(#{luisa, roque, alicia}, objetosII.alumnos())
+        assert.equals([], objetosII.listaDeEspera())
+        assert.equals(#{objetosII}, roque.materiasAlumnoRegular())        
+        assert.equals(#{}, romina.materiasInscripto()) 
+    }
+
+    test "pepe siendo ingresante intenta anotarse en Mate1, falla, se insribe en programación, se anota en Mate1 y la aprueba con 8, se quiere anotar de nuevo, no puede, se inscribe en Elementos y la aprueba con 6" { 
+        const pepe = new Estudiante()
+        assert.throwsException({pepe.inscribirEn(matematicaI)})
+        assert.equals(#{}, pepe.materiasInscripto())
+        pepe.inscribirEnCarrera(programacion)
+        assert.equals(#{programacion}, pepe.carreras())
+        pepe.inscribirEn(matematicaI)
+        assert.that(matematicaI.estaInscripto(pepe))
+        assert.equals(#{matematicaI}, pepe.materiasInscripto()) 
+        programacion.registrarAprobada(pepe, matematicaI, 8)
+        assert.that(pepe.estaAprobada(matematicaI))
+        assert.equals(8, pepe.promedio())
+        assert.throwsException({pepe.inscribirEn(matematicaI)})
+        pepe.inscribirEn(elementos)
+        assert.equals(#{elementos}, pepe.materiasAlumnoRegular())        
+        assert.equals(#{elementos}, pepe.materiasInscripto()) 
+        programacion.registrarAprobada(pepe, elementos, 6)
+        assert.equals(#{}, pepe.materiasInscripto())
+        assert.that(pepe.estaAprobada(elementos))
+        assert.equals(7, pepe.promedio())
+    } 
+
+    test "Ana aprobo con 10 Elementos y siguió estudiando" {
+        assert.that(ana.estaAprobada(elementos))
+        assert.equals(10, ana.nota(elementos))
+        ana.inscribirEn(matematicaI)
+        programacion.registrarAprobada(ana, matematicaI, 10)
+        ana.inscribirEn(basesDeDatos)
+        programacion.registrarAprobada(ana, basesDeDatos, 10)
+        ana.inscribirEn(objetosI)
+        programacion.registrarAprobada(ana, objetosI, 10)
+        ana.inscribirEn(objetosII)
+        programacion.registrarAprobada(ana, objetosII, 10)
+        ana.inscribirEn(objetosIII)
+        programacion.registrarAprobada(ana, objetosIII, 10)
+        ana.inscribirEn(tpFinal)         
+        programacion.registrarAprobada(ana, tpFinal, 9)
+        assert.equals(9.85714, ana.promedio())
+    }
+
+    test "marcos quiere hacer trampa aprobando elementos sin inscribirse" {
+        const marcos = new Estudiante()
+        marcos.inscribirEnCarrera(programacion)
+        assert.throwsException({marcos.registrarAprobada(marcos, elementos, 9)})
+    }
+}
