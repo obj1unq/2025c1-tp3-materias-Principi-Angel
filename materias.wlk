@@ -18,6 +18,7 @@ class Carrera {
     }
 
     method registrarAprobada(estudiante, materia, nota) {
+        validacionInscripto.validar(materia.estaInscripto(estudiante))
         estudiante.foja().registrar(materia, nota)
         materia.darDeBaja(estudiante)
     }
@@ -69,7 +70,7 @@ class Materia {
     }        
 
     method aprobo(estudiante) {
-        return estudiante.foja().estaAprobada(self)
+        return estudiante.estaAprobada(self)
     }
 
     method estaInscripto(estudiante) {
@@ -85,11 +86,7 @@ class Materia {
     }
 
     method cumpleCorrelativas(estudiante) {
-        return if (not tieneCorrelativas) {
-                true 
-            } else {
-                self.estanAprobadasCorrelativas(estudiante) 
-            }
+        return not tieneCorrelativas or self.estanAprobadasCorrelativas(estudiante)      
     }
     
     method estanAprobadasCorrelativas(estudiante) {
@@ -99,16 +96,12 @@ class Materia {
     }
 
     method darDeBaja(estudiante) {
-        self.validarEsteInscripto(estudiante)
+        validacionDeBaja.validar(self.estaInscripto(estudiante))
         self.darBaja(estudiante)
     }
 
     method hayEnEspera() {
         return not listaDeEspera.isEmpty()
-    }
-
-    method validarEsteInscripto(estudiante) {
-        if (not self.estaInscripto(estudiante)) {}
     }
 
     method darBaja(estudiante) {
@@ -144,10 +137,11 @@ class Validador {
         }
     }
 }
-object validacionEstudianteEnCarrera inherits Validador(mensaje = "No está inscripto en la carrera."){ }
+object validacionEstudianteEnCarrera inherits Validador(mensaje = "No está inscripta/o en la carrera."){ }
 object validacionCumpleCorrelativas inherits Validador(mensaje = "No cumple correlativas."){ }
 object validacionAprobada inherits Validador(mensaje = "Ya aprobó esta materia."){ }
-object validacionInscripto inherits Validador(mensaje = "Ya está inscripto en esta materia."){ }
+object validacionInscripto inherits Validador(mensaje = "Ya está inscripta/o  en esta materia."){ }
+object validacionDeBaja inherits Validador(mensaje = "No está inscripta/o en la materia para poder efectuar baja."){ }
 class Estudiante {
     
    const property foja = new Foja()
@@ -166,10 +160,9 @@ class Estudiante {
     }
 
     method materiasInscripto() {
-        const materias = #{}
-        carreras.forEach({
-            carrera => materias.add(carrera.materiasInscripto(self))
-        })
+        const materias = carreras.map({ 
+            carrera => carrera.materiasInscripto(self)
+            })
         return materias.flatten().asSet()
     }
 
@@ -199,6 +192,7 @@ class Estudiante {
     }
 
     method materiasQueSePuedeInscribir(carrera) {
+        validacionEstudianteEnCarrera.validar(carrera.estaEnLaCarrera(self)) 
         return carrera.materiasApto(self)
     }
 
